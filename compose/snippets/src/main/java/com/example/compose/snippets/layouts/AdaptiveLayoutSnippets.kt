@@ -18,22 +18,17 @@
 
 package com.example.compose.snippets.layouts
 
-import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
-import androidx.compose.material3.windowsizeclass.WindowHeightSizeClass
-import androidx.compose.material3.windowsizeclass.WindowSizeClass
-import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.dp
+import androidx.window.core.layout.WindowSizeClass
 
 /*
 * Copyright 2023 The Android Open Source Project
@@ -51,25 +46,14 @@ import androidx.compose.ui.unit.dp
 * limitations under the License.
 */
 // [START android_compose_adaptive_layouts_basic]
-class MainActivity : ComponentActivity() {
-    @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-        setContent {
-            val windowSizeClass = calculateWindowSizeClass(this)
-            MyApp(windowSizeClass)
-        }
-    }
-}
 @Composable
-fun MyApp(windowSizeClass: WindowSizeClass) {
-    // Perform logic on the size class to decide whether to show
-    // the top app bar.
-    val showTopAppBar = windowSizeClass.heightSizeClass != WindowHeightSizeClass.Compact
+fun MyApp(
+    windowSizeClass: WindowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
+) {
+    // Decide whether to show the top app bar based on window size class.
+    val showTopAppBar = windowSizeClass.isHeightAtLeastBreakpoint(WindowSizeClass.HEIGHT_DP_MEDIUM_LOWER_BOUND)
 
-    // MyScreen knows nothing about window sizes, and performs logic
-    // based on a Boolean flag.
+    // MyScreen logic is based on the showTopAppBar boolean flag.
     MyScreen(
         showTopAppBar = showTopAppBar,
         /* ... */
@@ -94,6 +78,13 @@ fun AdaptivePane(
     }
 }
 // [END android_compose_layouts_adaptive_pane]
+
+@Composable
+private fun WindowSizeClassSnippet() {
+    // [START android_compose_windowsizeclass]
+    val windowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
+    // [END android_compose_windowsizeclass]
+}
 
 @Composable
 fun OnePane() {

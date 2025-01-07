@@ -16,6 +16,8 @@
 
 package com.example.compose.snippets.adaptivelayouts
 
+import android.os.Parcelable
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -28,34 +30,33 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
-import androidx.compose.material3.adaptive.ListDetailPaneScaffold
-import androidx.compose.material3.adaptive.ListDetailPaneScaffoldRole
-import androidx.compose.material3.adaptive.rememberListDetailPaneScaffoldState
+import androidx.compose.material3.adaptive.layout.AnimatedPane
+import androidx.compose.material3.adaptive.layout.ListDetailPaneScaffold
+import androidx.compose.material3.adaptive.layout.ListDetailPaneScaffoldRole
+import androidx.compose.material3.adaptive.navigation.rememberListDetailPaneScaffoldNavigator
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.parcelize.Parcelize
 
 @OptIn(ExperimentalMaterial3AdaptiveApi::class)
 @Composable
 fun SampleListDetailPaneScaffoldParts() {
     // [START android_compose_adaptivelayouts_sample_list_detail_pane_scaffold_part02]
-    val state = rememberListDetailPaneScaffoldState()
-    // [END android_compose_adaptivelayouts_sample_list_detail_pane_scaffold_part02]
+    val navigator = rememberListDetailPaneScaffoldNavigator<MyItem>()
 
-    // [START android_compose_adaptivelayouts_sample_list_detail_pane_scaffold_part01]
-    var selectedItem: MyItem? by rememberSaveable { mutableStateOf(null) }
-    // [END android_compose_adaptivelayouts_sample_list_detail_pane_scaffold_part01]
+    BackHandler(navigator.canNavigateBack()) {
+        navigator.navigateBack()
+    }
+    // [END android_compose_adaptivelayouts_sample_list_detail_pane_scaffold_part02]
 
     // [START android_compose_adaptivelayouts_sample_list_detail_pane_scaffold_part03]
     ListDetailPaneScaffold(
-        scaffoldState = state,
+        directive = navigator.scaffoldDirective,
+        value = navigator.scaffoldValue,
         // [START_EXCLUDE]
         listPane = {},
         detailPane = {},
@@ -65,16 +66,17 @@ fun SampleListDetailPaneScaffoldParts() {
 
     // [START android_compose_adaptivelayouts_sample_list_detail_pane_scaffold_part04]
     ListDetailPaneScaffold(
-        scaffoldState = state,
+        directive = navigator.scaffoldDirective,
+        value = navigator.scaffoldValue,
         listPane = {
-            MyList(
-                onItemClick = { id ->
-                    // Set current item
-                    selectedItem = id
-                    // Switch focus to detail pane
-                    state.navigateTo(ListDetailPaneScaffoldRole.Detail)
-                }
-            )
+            AnimatedPane {
+                MyList(
+                    onItemClick = { item ->
+                        // Navigate to the detail pane with the passed item
+                        navigator.navigateTo(ListDetailPaneScaffoldRole.Detail, item)
+                    }
+                )
+            }
         },
         // [START_EXCLUDE]
         detailPane = {},
@@ -84,14 +86,17 @@ fun SampleListDetailPaneScaffoldParts() {
 
     // [START android_compose_adaptivelayouts_sample_list_detail_pane_scaffold_part05]
     ListDetailPaneScaffold(
-        scaffoldState = state,
+        directive = navigator.scaffoldDirective,
+        value = navigator.scaffoldValue,
         listPane =
         // [START_EXCLUDE]
         {},
         // [END_EXCLUDE]
         detailPane = {
-            selectedItem?.let { item ->
-                MyDetails(item)
+            AnimatedPane {
+                navigator.currentDestination?.content?.let {
+                    MyDetails(it)
+                }
             }
         },
     )
@@ -103,28 +108,31 @@ fun SampleListDetailPaneScaffoldParts() {
 @Composable
 fun SampleListDetailPaneScaffoldFull() {
 // [START android_compose_adaptivelayouts_sample_list_detail_pane_scaffold_full]
-    // Create the ListDetailPaneScaffoldState
-    val state = rememberListDetailPaneScaffoldState()
+    val navigator = rememberListDetailPaneScaffoldNavigator<MyItem>()
 
-    // Currently selected item
-    var selectedItem: MyItem? by rememberSaveable { mutableStateOf(null) }
+    BackHandler(navigator.canNavigateBack()) {
+        navigator.navigateBack()
+    }
 
     ListDetailPaneScaffold(
-        scaffoldState = state,
+        directive = navigator.scaffoldDirective,
+        value = navigator.scaffoldValue,
         listPane = {
-            MyList(
-                onItemClick = { id ->
-                    // Set current item
-                    selectedItem = id
-                    // Display the detail pane
-                    state.navigateTo(ListDetailPaneScaffoldRole.Detail)
-                },
-            )
+            AnimatedPane {
+                MyList(
+                    onItemClick = { item ->
+                        // Navigate to the detail pane with the passed item
+                        navigator.navigateTo(ListDetailPaneScaffoldRole.Detail, item)
+                    },
+                )
+            }
         },
         detailPane = {
-            // Show the detail pane content if selected item is available
-            selectedItem?.let { item ->
-                MyDetails(item)
+            AnimatedPane {
+                // Show the detail pane content if selected item is available
+                navigator.currentDestination?.content?.let {
+                    MyDetails(it)
+                }
             }
         },
     )
@@ -178,11 +186,12 @@ fun MyDetails(item: MyItem) {
     }
 }
 
-class MyItem(val id: Int)
+// [START android_compose_adaptivelayouts_sample_list_detail_pane_scaffold_myitem]
+@Parcelize
+class MyItem(val id: Int) : Parcelable
+// [END android_compose_adaptivelayouts_sample_list_detail_pane_scaffold_myitem]
 
 val shortStrings = listOf(
-    "Android",
-    "Petit four",
     "Cupcake",
     "Donut",
     "Eclair",
